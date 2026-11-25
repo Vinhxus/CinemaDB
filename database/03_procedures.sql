@@ -352,6 +352,62 @@ BEGIN
         u.Name ASC;
 END $$
 
+DROP PROCEDURE IF EXISTS validate_screening_schedule $$
+CREATE PROCEDURE validate_screening_schedule(
+    IN p_cinema_id INT,
+    IN p_room_number INT,
+    IN p_screen_date DATE,
+    IN p_start_time TIME,
+    IN p_movie_id INT,
+    IN p_old_cinema_id INT,
+    IN p_old_room_number INT,
+    IN p_old_screen_date DATE,
+    IN p_old_start_time TIME
+)
+BEGIN
+    DECLARE release_date DATE;
+    DECLARE duration_minutes INT;
+    DECLARE screening_start DATETIME;
+    DECLARE screening_end DATETIME;
+    DECLARE locked_room INT;
+
+    SELECT m.ReleaseDate, m.Duration INTO release_date, duration_minutes
+    FROM Movie AS m
+    WHERE m.MovieID = p_movie_id
+    FOR SHARE;
+
+    IF p_screen_date < release_date THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Screening cannot start before the movie release date';
+    END IF;
+
+    SELECT r.RoomNumber INTO locked_room
+    FROM ScreeningRoom AS r
+    WHERE r.CinemaID = p_cinema_id AND r.RoomNumber = p_room_number
+    FOR UPDATE;
+
+    SET screening_start = TIMESTAMP(p_screen_date, p_start_time);
+    SET screening_end = DATE_ADD(screening_start, INTERVAL duration_minutes MINUTE);
+
+    IF EXISTS (
+        SELECT 1
+        FROM Screening AS s
+        JOIN Movie AS m ON m.MovieID = s.MovieID
+        WHERE s.CinemaID = p_cinema_id
+          AND s.RoomNumber = p_room_number
+          AND NOT (
+              s.CinemaID <=> p_old_cinema_id
+              AND s.RoomNumber <=> p_old_room_number
+              AND s.ScreenDate <=> p_old_screen_date
+              AND s.StartTime <=> p_old_start_time
+          )
+          AND screening_start < DATE_ADD(TIMESTAMP(s.ScreenDate, s.StartTime), INTERVAL m.Duration MINUTE)
+          AND TIMESTAMP(s.ScreenDate, s.StartTime) < screening_end
+        FOR SHARE
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Screening overlaps another screening in the same room';
+    END IF;
+END $$
+
 DELIMITER ;
 
 -- P2 (Tài): Thống kê điểm review theo phim — JOIN nhiều bảng, aggregate,
