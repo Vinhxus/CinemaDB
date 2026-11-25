@@ -28,7 +28,7 @@ USE cinema_db;
 CREATE TABLE Cinema (
     CinemaID    INT AUTO_INCREMENT PRIMARY KEY,
     CinemaName  VARCHAR(100) NOT NULL UNIQUE,
-    Address     VARCHAR(255) NOT NULL
+    Address     VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE Users (
@@ -97,7 +97,7 @@ CREATE TABLE Seat (
     SeatRow     CHAR(1)     NOT NULL,
     SeatNumber  INT         NOT NULL,
     SeatType    VARCHAR(10) NOT NULL,
-    PRIMARY KEY (CinemaID, RoomNumber, SeatRow, SeatNumber),   -- khóa riêng phần ghép (SeatRow, SeatNumber)
+    PRIMARY KEY (CinemaID, RoomNumber, SeatRow, SeatNumber),
     CONSTRAINT fk_seat_room FOREIGN KEY (CinemaID, RoomNumber) REFERENCES ScreeningRoom(CinemaID, RoomNumber),
     CONSTRAINT chk_seat_row    CHECK (SeatRow REGEXP '^[A-Z]$'),
     CONSTRAINT chk_seat_number CHECK (SeatNumber > 0),
@@ -107,12 +107,12 @@ CREATE TABLE Seat (
 CREATE TABLE Movie (
     MovieID      INT AUTO_INCREMENT PRIMARY KEY,
     Title        VARCHAR(200) NOT NULL,
-    Duration     INT          NOT NULL,             -- phút
+    Duration     INT          NOT NULL,
     ReleaseDate  DATE         NOT NULL,
     Description  TEXT,
     AgeRating    VARCHAR(5)   NOT NULL,
     Language     VARCHAR(50)  NOT NULL,
-    CONSTRAINT chk_movie_duration CHECK (Duration > 0),        -- RB4 (M2)
+    CONSTRAINT chk_movie_duration CHECK (Duration > 0),
     CONSTRAINT chk_movie_rating   CHECK (AgeRating IN ('P','K','T13','T16','T18'))
 );
 
@@ -134,7 +134,6 @@ CREATE TABLE Actor (
     ActorID      INT AUTO_INCREMENT PRIMARY KEY,
     ActorName    VARCHAR(100) NOT NULL,
     DateOfBirth  DATE
-    -- RB5 (M2): DateOfBirth <= ngày hiện tại. MySQL không cho CURDATE() trong CHECK -> trigger
 );
 
 CREATE TABLE Perform (
@@ -158,9 +157,8 @@ CREATE TABLE Screening (
     RoomNumber  INT        NOT NULL,
     ScreenDate  DATE       NOT NULL,
     StartTime   TIME       NOT NULL,
-    MovieID     INT        NOT NULL,                -- tham gia toàn phần
+    MovieID     INT        NOT NULL,
     Format      VARCHAR(5) NOT NULL,
-    -- EndTime là thuộc tính dẫn xuất (StartTime + Movie.Duration), không lưu
     PRIMARY KEY (CinemaID, RoomNumber, ScreenDate, StartTime),
     CONSTRAINT fk_screening_room  FOREIGN KEY (CinemaID, RoomNumber) REFERENCES ScreeningRoom(CinemaID, RoomNumber),
     CONSTRAINT fk_screening_movie FOREIGN KEY (MovieID) REFERENCES Movie(MovieID),
