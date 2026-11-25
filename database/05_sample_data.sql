@@ -60,9 +60,72 @@ INSERT INTO Staff (UserID, StartDate, Salary, Status, Position, CinemaID, Superv
 
 -- ---------------------------------------------------------------------
 -- MODULE 2 (Ca)
--- TODO(Ca): ScreeningRoom, Seat, Movie, Genre, MovieGenre, Actor, Perform,
---           PerformRole, Screening  (mỗi bảng >= 5 dòng)
 -- ---------------------------------------------------------------------
+INSERT INTO ScreeningRoom (CinemaID, RoomNumber, RoomType, Capacity) VALUES
+(1, 1, 'Standard',   0),
+(1, 2, 'IMAX',       0),
+(2, 1, '4DX',        0),
+(3, 1, 'Gold Class', 0),
+(4, 1, 'Standard',   0);
+
+INSERT INTO Seat (CinemaID, RoomNumber, SeatRow, SeatNumber, SeatType) VALUES
+(1, 1, 'A', 1, 'Standard'),
+(1, 1, 'A', 2, 'Standard'),
+(1, 2, 'A', 1, 'VIP'),
+(2, 1, 'A', 1, 'Couple'),
+(3, 1, 'A', 1, 'VIP');
+
+INSERT INTO Movie (MovieID, Title, Duration, ReleaseDate, Description, AgeRating, Language) VALUES
+(1, N'Chuyến Tàu Cuối',          110, '2024-01-12', N'Một nhà báo lần theo manh mối trên chuyến tàu đêm.', 'T13', N'Tiếng Việt'),
+(2, N'Mùa Hè Ở Hội An',           95, '2024-03-08', N'Hai người bạn mở lại tiệm ảnh cũ của gia đình.',      'P',   N'Tiếng Việt'),
+(3, N'Vượt Qua Tầng Mây',        120, '2024-05-17', N'Một phi công dẫn đội cứu hộ qua vùng núi.',           'T13', N'Tiếng Việt'),
+(4, N'Bản Đồ Của Biển',          105, '2024-07-19', N'Một thợ lặn tìm lại bản đồ của cha mình.',             'K',   N'Tiếng Việt'),
+(5, N'Thành Phố Không Ngủ',      100, '2024-09-06', N'Một nhạc công đi tìm cảm hứng dọc những con phố đêm.', 'T16', N'Tiếng Việt');
+
+INSERT INTO Genre (GenreID, GenreName, Description) VALUES
+(1, N'Bí ẩn',       N'Câu chuyện xoay quanh việc giải mã bí ẩn.'),
+(2, N'Hài',         N'Câu chuyện có tình huống hài hước.'),
+(3, N'Hành động',   N'Câu chuyện có các pha hành động và cứu hộ.'),
+(4, N'Phiêu lưu',   N'Câu chuyện về hành trình khám phá.'),
+(5, N'Chính kịch',  N'Câu chuyện tập trung vào những lựa chọn của nhân vật.');
+
+INSERT INTO MovieGenre (MovieID, GenreID) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 4),
+(5, 5);
+
+INSERT INTO Actor (ActorID, ActorName, DateOfBirth) VALUES
+(1, N'Nguyễn Minh An',  '1986-02-14'),
+(2, N'Lê Ngọc Hân',     '1994-06-21'),
+(3, N'Trần Gia Bảo',    '1989-11-03'),
+(4, N'Phạm Thùy Linh',  '1997-04-18'),
+(5, N'Võ Hoàng Sơn',    '1991-09-27');
+
+INSERT INTO Perform (MovieID, ActorID) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 4),
+(5, 5);
+
+INSERT INTO PerformRole (MovieID, ActorID, Role) VALUES
+(1, 1, N'Nhà báo Khải'),
+(2, 2, N'Nhiếp ảnh gia Mai'),
+(3, 3, N'Phi công Duy'),
+(4, 4, N'Thợ lặn Vy'),
+(5, 5, N'Nhạc công Nam');
+
+SET @module2_screen_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY);
+
+INSERT INTO Screening (CinemaID, RoomNumber, ScreenDate, StartTime, MovieID, Format) VALUES
+(1, 1, @module2_screen_date, '10:00:00', 1, '2D'),
+(1, 1, @module2_screen_date, '11:50:00', 2, '2D'),
+(1, 2, @module2_screen_date, '10:00:00', 3, '3D'),
+(2, 1, @module2_screen_date, '14:00:00', 4, '3D'),
+(3, 1, @module2_screen_date, '18:30:00', 5, '2D');
+
 
 -- ---------------------------------------------------------------------
 -- MODULE 4 phần TicketCombo (Tài) — cần có trước Booking
