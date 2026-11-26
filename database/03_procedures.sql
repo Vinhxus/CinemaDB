@@ -2,7 +2,7 @@
 -- 03_procedures.sql  —  Mục 2.1 (thêm/sửa/xóa Staff) và 2.3 (2 thủ tục truy vấn)
 -- Chạy sau 02_triggers.sql.
 -- =====================================================================
-USE cinema_db;
+USE cinema;
 
 DELIMITER $$
 

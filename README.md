@@ -22,6 +22,8 @@ cinemaDB/
         ├── api.ts           Hàm gọi backend + kiểu dữ liệu
         ├── index.css        Tailwind
         └── pages/
+            ├── Overview.tsx     Tổng quan: số dòng mỗi bảng, trigger, thủ tục, hàm
+            ├── DataBrowser.tsx  Xem dữ liệu + cấu trúc của mọi bảng (chỉ đọc)
             ├── StaffList.tsx    Danh sách nhân viên       (3.2)
             ├── StaffForm.tsx    Thêm / sửa / xóa           (3.1)
             └── Reports.tsx      Gọi thủ tục / hàm khác     (3.3)

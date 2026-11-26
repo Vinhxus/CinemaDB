@@ -7,7 +7,7 @@ const pool = mysql.createPool({
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'cinema_db',
+  database: process.env.DB_NAME || 'cinema',
   dateStrings: true, // DATE trả về dạng 'YYYY-MM-DD', tránh lệch múi giờ
   charset: 'utf8mb4',
 })
@@ -31,7 +31,7 @@ function sendError(res, err) {
     ER_SP_DOES_NOT_EXIST: 'Thủ tục/hàm chưa được tạo trong database: ' + err.sqlMessage,
     ECONNREFUSED: 'Không kết nối được MySQL. Kiểm tra MySQL đã chạy chưa',
     ER_ACCESS_DENIED_ERROR: 'Sai tài khoản/mật khẩu MySQL. Kiểm tra file backend/.env',
-    ER_BAD_DB_ERROR: 'Chưa có database cinema_db. Hãy chạy các file SQL trước',
+    ER_BAD_DB_ERROR: 'Chưa có database cinema. Hãy chạy các file SQL trước',
   }
   if (messages[err.code]) return res.status(400).json({ error: messages[err.code] })
   res.status(500).json({ error: 'Lỗi máy chủ: ' + (err.sqlMessage || err.message) })

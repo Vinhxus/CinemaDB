@@ -1,9 +1,10 @@
-// Mục 3.3: Gọi thủ tục P2 (sp_ReviewStatsByMovie) và hàm F2 (fn_CheckTicketCombo)
+// Mục 3.3: Gọi thủ tục P2 (sp_ReviewStatsByMovie), hàm F1 (fn_RoomOccupancyRate) và hàm F2 (fn_CheckTicketCombo)
 // TODO(Tài): chỉnh cột hiển thị cho khớp kết quả thủ tục sau khi viết xong SQL
+// TODO(Ca): kiểm tra tên/tham số F1 khớp với 04_functions.sql
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { request, toQuery } from '../api.ts'
-import type { Genre } from '../api.ts'
+import type { Cinema, Genre, Room } from '../api.ts'
 
 type Row = Record<string, string | number | null>
 
@@ -17,9 +18,36 @@ export default function Reports() {
   const [f2Result, setF2Result] = useState('')
   const [f2Error, setF2Error] = useState('')
 
+  // F1: tỷ lệ lấp đầy phòng chiếu
+  const [cinemas, setCinemas] = useState<Cinema[]>([])
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [f1, setF1] = useState({ cinemaId: '', roomNumber: '', date: '' })
+  const [f1Result, setF1Result] = useState<string | null>(null)
+  const [f1Error, setF1Error] = useState('')
+
   useEffect(() => {
     request<Genre[]>('/genres').then(setGenres).catch(() => {})
+    request<Cinema[]>('/cinemas').then(setCinemas).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!f1.cinemaId) { setRooms([]); return }
+    request<Room[]>(`/rooms?cinemaId=${f1.cinemaId}`).then(setRooms).catch((e) => setF1Error(e.message))
+  }, [f1.cinemaId])
+
+  async function runF1(e: FormEvent) {
+    e.preventDefault()
+    setF1Error(''); setF1Result(null)
+    if (!f1.cinemaId) { setF1Error('Vui lòng chọn rạp'); return }
+    if (!f1.roomNumber) { setF1Error('Vui lòng chọn phòng chiếu'); return }
+    if (!f1.date) { setF1Error('Vui lòng chọn ngày chiếu'); return }
+    try {
+      const r = await request<{ result: string | number | null }>('/reports/occupancy' + toQuery(f1))
+      setF1Result(r.result === null ? 'Không có suất chiếu nào trong ngày này' : String(r.result))
+    } catch (err) {
+      setF1Error((err as Error).message)
+    }
+  }
 
   async function runP2(e: FormEvent) {
     e.preventDefault()
@@ -83,6 +111,29 @@ export default function Reports() {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      <div className="rounded-xl bg-white p-6 shadow-sm">
+        <h2 className="mb-1 text-xl font-bold">Tỷ lệ lấp đầy phòng chiếu</h2>
+        <p className="mb-5 text-sm text-slate-500">Gọi hàm F1 <code className="font-mono">fn_RoomOccupancyRate(rạp, phòng, ngày)</code></p>
+        <form onSubmit={runF1} className="flex flex-wrap items-center gap-3">
+          <select className="input w-auto" value={f1.cinemaId} onChange={(e) => setF1({ ...f1, cinemaId: e.target.value, roomNumber: '' })}>
+            <option value="">-- Chọn rạp --</option>
+            {cinemas.map((c) => <option key={c.CinemaID} value={c.CinemaID}>{c.CinemaName}</option>)}
+          </select>
+          <select className="input w-auto" value={f1.roomNumber} disabled={!f1.cinemaId} onChange={(e) => setF1({ ...f1, roomNumber: e.target.value })}>
+            <option value="">{f1.cinemaId ? (rooms.length ? '-- Chọn phòng --' : 'Rạp chưa có phòng') : 'Chọn rạp trước'}</option>
+            {rooms.map((r) => <option key={r.RoomNumber} value={r.RoomNumber}>Phòng {r.RoomNumber} · {r.RoomType} · {r.Capacity} ghế</option>)}
+          </select>
+          <input type="date" className="input w-auto" value={f1.date} onChange={(e) => setF1({ ...f1, date: e.target.value })} />
+          <button className="btn-primary">Tính</button>
+        </form>
+        {f1Error && errorBox(f1Error)}
+        {f1Result !== null && (
+          <div className="mt-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-green-800">
+            Kết quả: <span className="font-bold">{f1Result}{/^\d+(\.\d+)?$/.test(f1Result) ? ' %' : ''}</span>
+          </div>
         )}
       </div>
 

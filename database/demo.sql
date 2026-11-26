@@ -3,7 +3,7 @@
 -- Chạy từng câu một khi thuyết trình. Các câu đánh dấu [LỖI] phải báo lỗi
 -- với thông báo cụ thể; các câu [OK] phải chạy thành công.
 -- =====================================================================
-USE cinema_db;
+USE cinema;
 
 -- ---------- sp_InsertStaff ----------
 -- [OK] Thêm cashier hợp lệ cho rạp 2, quản lý là UserID 2
