@@ -87,7 +87,7 @@ CREATE TABLE ScreeningRoom (
     PRIMARY KEY (CinemaID, RoomNumber),
     CONSTRAINT fk_room_cinema FOREIGN KEY (CinemaID) REFERENCES Cinema(CinemaID),
     CONSTRAINT chk_room_number   CHECK (RoomNumber > 0),
-    CONSTRAINT chk_room_capacity CHECK (Capacity > 0),
+    CONSTRAINT chk_room_capacity CHECK (Capacity >= 0),
     CONSTRAINT chk_room_type     CHECK (RoomType IN ('Standard','IMAX','4DX','Gold Class'))
 );
 

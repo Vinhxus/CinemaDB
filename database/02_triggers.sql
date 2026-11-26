@@ -150,14 +150,158 @@ DELIMITER ;
 
 -- =====================================================================
 -- MODULE 2: CINEMA AND MOVIE  (Ca)
--- TODO(Ca):
---   * RB3: Capacity của phòng = số ghế của phòng (INSERT/DELETE trên Seat, UPDATE Capacity)
---   * RB5: Actor.DateOfBirth <= CURDATE()
---   * MỤC 2.2.1 (trigger ràng buộc nghiệp vụ): suất chiếu không chồng giờ trong
---     cùng phòng (RB1) và không trước ngày phát hành phim (RB2).
---     Thao tác có thể vi phạm: INSERT Screening, UPDATE Screening (giờ/phòng/phim),
---     UPDATE Movie.Duration, UPDATE Movie.ReleaseDate.
 -- =====================================================================
+
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS trg_actor_bi $$
+CREATE TRIGGER trg_actor_bi BEFORE INSERT ON Actor
+FOR EACH ROW
+BEGIN
+    IF NEW.DateOfBirth > CURDATE() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Actor date of birth cannot be in the future';
+    END IF;
+END $$
+
+DROP TRIGGER IF EXISTS trg_actor_bu $$
+CREATE TRIGGER trg_actor_bu BEFORE UPDATE ON Actor
+FOR EACH ROW
+BEGIN
+    IF NEW.DateOfBirth > CURDATE() THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Actor date of birth cannot be in the future';
+    END IF;
+END $$
+
+DROP TRIGGER IF EXISTS trg_screening_room_bi $$
+CREATE TRIGGER trg_screening_room_bi BEFORE INSERT ON ScreeningRoom
+FOR EACH ROW
+BEGIN
+    IF NEW.Capacity <> 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A new screening room must have zero capacity';
+    END IF;
+END $$
+
+DROP TRIGGER IF EXISTS trg_screening_room_bu $$
+CREATE TRIGGER trg_screening_room_bu BEFORE UPDATE ON ScreeningRoom
+FOR EACH ROW
+BEGIN
+    DECLARE seat_count BIGINT;
+
+    IF NEW.Capacity <> OLD.Capacity THEN
+        SELECT COUNT(*) INTO seat_count
+        FROM Seat
+        WHERE CinemaID = NEW.CinemaID AND RoomNumber = NEW.RoomNumber
+        FOR SHARE;
+
+        IF NEW.Capacity <> seat_count THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Room capacity must equal its seat count';
+        END IF;
+    END IF;
+END $$
+
+DROP TRIGGER IF EXISTS trg_seat_ai $$
+CREATE TRIGGER trg_seat_ai AFTER INSERT ON Seat
+FOR EACH ROW
+BEGIN
+    UPDATE ScreeningRoom
+    SET Capacity = Capacity + 1
+    WHERE CinemaID = NEW.CinemaID AND RoomNumber = NEW.RoomNumber;
+END $$
+
+DROP TRIGGER IF EXISTS trg_seat_ad $$
+CREATE TRIGGER trg_seat_ad AFTER DELETE ON Seat
+FOR EACH ROW
+BEGIN
+    UPDATE ScreeningRoom
+    SET Capacity = Capacity - 1
+    WHERE CinemaID = OLD.CinemaID AND RoomNumber = OLD.RoomNumber;
+END $$
+
+DROP TRIGGER IF EXISTS trg_seat_au $$
+CREATE TRIGGER trg_seat_au AFTER UPDATE ON Seat
+FOR EACH ROW
+BEGIN
+    IF NEW.CinemaID <> OLD.CinemaID OR NEW.RoomNumber <> OLD.RoomNumber THEN
+        UPDATE ScreeningRoom
+        SET Capacity = Capacity - 1
+        WHERE CinemaID = OLD.CinemaID AND RoomNumber = OLD.RoomNumber;
+
+        UPDATE ScreeningRoom
+        SET Capacity = Capacity + 1
+        WHERE CinemaID = NEW.CinemaID AND RoomNumber = NEW.RoomNumber;
+    END IF;
+END $$
+
+DROP TRIGGER IF EXISTS trg_screening_bi $$
+CREATE TRIGGER trg_screening_bi BEFORE INSERT ON Screening
+FOR EACH ROW
+BEGIN
+    CALL validate_screening_schedule(
+        NEW.CinemaID, NEW.RoomNumber, NEW.ScreenDate, NEW.StartTime, NEW.MovieID,
+        NULL, NULL, NULL, NULL
+    );
+END $$
+
+DROP TRIGGER IF EXISTS trg_screening_bu $$
+CREATE TRIGGER trg_screening_bu BEFORE UPDATE ON Screening
+FOR EACH ROW
+BEGIN
+    IF NEW.CinemaID <> OLD.CinemaID OR NEW.RoomNumber <> OLD.RoomNumber
+       OR NEW.ScreenDate <> OLD.ScreenDate OR NEW.StartTime <> OLD.StartTime
+       OR NEW.MovieID <> OLD.MovieID THEN
+        CALL validate_screening_schedule(
+            NEW.CinemaID, NEW.RoomNumber, NEW.ScreenDate, NEW.StartTime, NEW.MovieID,
+            OLD.CinemaID, OLD.RoomNumber, OLD.ScreenDate, OLD.StartTime
+        );
+    END IF;
+END $$
+
+DROP TRIGGER IF EXISTS trg_movie_bu $$
+CREATE TRIGGER trg_movie_bu BEFORE UPDATE ON Movie
+FOR EACH ROW
+BEGIN
+    DECLARE locked_screening_count BIGINT;
+
+    IF NEW.ReleaseDate <> OLD.ReleaseDate OR NEW.Duration <> OLD.Duration THEN
+        SELECT COUNT(*) INTO locked_screening_count
+        FROM Screening AS s
+        STRAIGHT_JOIN ScreeningRoom AS r
+            ON r.CinemaID = s.CinemaID AND r.RoomNumber = s.RoomNumber
+        WHERE s.MovieID = OLD.MovieID
+        FOR UPDATE OF r FOR SHARE OF s;
+    END IF;
+
+    IF NEW.ReleaseDate <> OLD.ReleaseDate AND EXISTS (
+        SELECT 1
+        FROM Screening AS s
+        WHERE s.MovieID = OLD.MovieID AND s.ScreenDate < NEW.ReleaseDate
+        FOR SHARE
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Movie release date would invalidate an existing screening';
+    END IF;
+
+    IF NEW.Duration <> OLD.Duration AND EXISTS (
+        SELECT 1
+        FROM Screening AS s
+        JOIN Screening AS other
+            ON other.CinemaID = s.CinemaID AND other.RoomNumber = s.RoomNumber
+        JOIN Movie AS m ON m.MovieID = other.MovieID
+        WHERE s.MovieID = OLD.MovieID
+          AND (s.ScreenDate <> other.ScreenDate OR s.StartTime <> other.StartTime)
+          AND TIMESTAMP(other.ScreenDate, other.StartTime) <
+              DATE_ADD(TIMESTAMP(s.ScreenDate, s.StartTime), INTERVAL NEW.Duration MINUTE)
+          AND TIMESTAMP(s.ScreenDate, s.StartTime) <
+              DATE_ADD(
+                  TIMESTAMP(other.ScreenDate, other.StartTime),
+                  INTERVAL (CASE WHEN other.MovieID = OLD.MovieID THEN NEW.Duration ELSE m.Duration END) MINUTE
+              )
+        FOR SHARE
+    ) THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Movie duration would cause existing screenings to overlap';
+    END IF;
+END $$
+
+DELIMITER ;
 
 
 -- =====================================================================
