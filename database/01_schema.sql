@@ -1,7 +1,7 @@
 -- =====================================================================
 -- 01_schema.sql  —  Cinema Ticketing System (CC06 - Group 4)
 -- DBMS: MySQL 8.0.16+  (cần bản có hỗ trợ CHECK)
--- Chạy file này ĐẦU TIÊN. File sẽ xóa và tạo lại database cinema_db.
+-- Chạy file này ĐẦU TIÊN. File sẽ xóa và tạo lại database cinema.
 --
 -- Đã áp dụng các sửa đổi so với Ass1 theo góp ý của thầy:
 --   * Mọi quan hệ tham gia toàn phần -> cột NOT NULL
@@ -18,9 +18,9 @@
 -- Bảng người dùng đặt tên là Users (vì USER là từ khóa của MySQL).
 -- =====================================================================
 
-DROP DATABASE IF EXISTS cinema_db;
-CREATE DATABASE cinema_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE cinema_db;
+DROP DATABASE IF EXISTS cinema;
+CREATE DATABASE cinema CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE cinema;
 
 -- ---------------------------------------------------------------------
 -- MODULE 1: USER  (Vinh)

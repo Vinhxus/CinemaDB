@@ -5,7 +5,7 @@
 -- Chạy sau 03_procedures.sql.
 -- Lưu ý MySQL: nếu bật binary log, cần chạy lệnh dưới (hoặc khai báo READS SQL DATA).
 -- =====================================================================
-USE cinema_db;
+USE cinema;
 SET GLOBAL log_bin_trust_function_creators = 1;
 
 -- F1 (Ca): Tỷ lệ lấp đầy / số ghế trống của một phòng (hoặc một suất chiếu), dùng cursor.

@@ -5,7 +5,7 @@
 -- (ràng buộc so sánh nhiều bảng, hoặc phụ thuộc thời điểm hiện tại).
 -- Mọi lỗi dùng SIGNAL SQLSTATE '45000' với thông báo cụ thể.
 -- =====================================================================
-USE cinema_db;
+USE cinema;
 
 DELIMITER $$
 
